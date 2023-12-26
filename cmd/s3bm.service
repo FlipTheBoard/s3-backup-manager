@@ -12,6 +12,7 @@ RestartSec=100
 KillMode=process
 Environment=AWS_ACCESS_KEY_ID=***
 Environment=AWS_SECRET_ACCESS_KEY=***
+Environment=CONFIG_PATH=/root/dir/
 
 [Install]
 WantedBy=multi-user.target

@@ -70,7 +70,6 @@ func (e *Executor) startBackupRunner(ctx context.Context, name string, backup co
 					Str("command", command).
 					Send()
 
-				cmdMutex.Unlock()
 				continue
 			}
 
@@ -90,14 +89,11 @@ func (e *Executor) startBackupRunner(ctx context.Context, name string, backup co
 				Bytes("stdout", output).
 				Str("path", path).
 				Send()
-
-			cmdMutex.Unlock()
-			continue
 		}
 
 		cmdMutex.Unlock()
 
-		log.Info().Msg("successfully")
+		log.Info().Msg("backup finished")
 	}
 }
 

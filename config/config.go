@@ -3,6 +3,8 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"os"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -22,8 +24,13 @@ type Backup struct {
 }
 
 func ParseConfig() (*Config, error) {
+	path, ok := os.LookupEnv("CONFIG_PATH")
+	if !ok {
+		return nil, errors.New("CONFIG_PATH env not found")
+	}
+
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(path)
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
