@@ -1,0 +1,30 @@
+# Debug = 0
+# Info  = 1
+# Warn  = 2
+# Error = 3
+logging_level: 0
+
+# {dt}  -> datetime    e.g. "2023-11-26_22:47:02"
+# {name} -> backup name
+
+# interval: “s”, “m”, “h”
+
+backups:
+  erp_monthly:
+    interval: 720h
+    path: "/home/root/git/s3-backup-manager/{dt}_{name}_dump.zip"
+    commands:
+      - "wget --post-data 'master_pwd=123&name=odoo&backup_format=zip' \
+        -O {path} https://erp.test.ru/web/database/backup"
+
+  wiki_monthly:
+    interval: 720h
+    path: "/home/root/git/s3-backup-manager/{dt}_{name}_dump.tar.gz"
+    commands:
+      - "docker exec mariadb-dev mariadb-dump --all-databases -ubookstack -pbookstackapp > \
+        /home/mrdan4es/git/s3-backup-manager/wiki/wiki_monthly.sql"
+      - "docker exec bookstack-dev /bin/bash -c 'tar -czvf /tmp/wiki_monthly.tar.gz config/www/*'"
+      - "docker cp bookstack-dev:/tmp/wiki_monthly.tar.gz /home/root/git/s3-backup-manager/wiki/wiki_monthly.tar.gz"
+      - "docker exec bookstack-dev rm /tmp/wiki_monthly.tar.gz"
+      - "tar -czvf {path} /home/root/git/s3-backup-manager/wiki/"
+      - "rm /home/root/git/s3-backup-manager/wiki/*"

@@ -1,0 +1,17 @@
+[Unit]
+Description=S3 Backup Manager
+
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+ExecStart=/
+Restart=on-failure
+RestartSec=100
+KillMode=process
+Environment=AWS_ACCESS_KEY_ID=***
+Environment=AWS_SECRET_ACCESS_KEY=***
+
+[Install]
+WantedBy=multi-user.target
