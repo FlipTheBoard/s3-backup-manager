@@ -33,7 +33,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    files: [ s3bm.service ]
+    files: [ s3bm.service, config.yml ]
 
 changelog:
   sort: asc
