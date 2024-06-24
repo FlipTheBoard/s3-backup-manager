@@ -14,7 +14,13 @@ import (
 
 type Config struct {
 	LoggingLevel zerolog.Level `mapstructure:"logging_level"`
+	S3           S3Config
 	Backups      map[string]*Backup
+}
+
+type S3Config struct {
+	Region   string
+	Endpoint string
 }
 
 type Backup struct {

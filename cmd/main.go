@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
+	"errors"
+	"fmt"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/rs/zerolog"
@@ -37,27 +39,34 @@ func main() {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	region := "ru-1"
-	endpoint := "https://s3.ru-1.storage.selcloud.ru"
-	s := session.Must(
-		session.NewSession(
-			&aws.Config{
-				Credentials: credentials.NewEnvCredentials(),
-				Endpoint:    &endpoint,
-				Region:      &region,
-			},
-		),
+	err = run(ctx, cfg)
+
+	switch {
+	case errors.Is(err, context.Canceled):
+		log.Info().Msg("gracefully stopped")
+	case err != nil:
+		log.Fatal().Err(err).Msg("unexpectedly terminated")
+	}
+}
+
+func run(ctx context.Context, cfg *config.Config) error {
+	s, err := session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewEnvCredentials(),
+			Endpoint:    &cfg.S3.Endpoint,
+			Region:      &cfg.S3.Region,
+		},
 	)
-	uploader := s3manager.NewUploader(s)
-
-	e := executor.NewExecutor(ctx, uploader, cfg)
-	if err = e.Run(ctx); err != nil {
-		log.Fatal().Err(err).Send()
+	if err != nil {
+		return fmt.Errorf("s3 session: %w", err)
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Info().Msg("service shutting down")
-	}
+	executor.New(ctx,
+		executor.WithConfig(cfg),
+		executor.WithUploader(s3manager.NewUploader(s)),
+	).Run(ctx)
 
+	<-ctx.Done()
+
+	return nil
 }

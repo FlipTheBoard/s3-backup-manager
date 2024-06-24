@@ -4,6 +4,10 @@
 # Error = 3
 logging_level: 0
 
+s3:
+  region: "ru-1"
+  endpoint: "https://s3.ru-1.storage.selcloud.ru"
+
 # {dt}  -> datetime    e.g. "2023-11-26_22:47:02"
 # {name} -> backup name
 
