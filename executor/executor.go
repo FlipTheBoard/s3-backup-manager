@@ -2,7 +2,6 @@ package executor
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go/aws"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
@@ -25,25 +25,45 @@ type Executor struct {
 	log      *zerolog.Logger
 }
 
-func NewExecutor(ctx context.Context, uploader *s3manager.Uploader, config *config.Config) *Executor {
-	log := zlog.Ctx(ctx)
+type Option = func(*Executor)
 
-	return &Executor{
-		config:   config,
-		uploader: uploader,
-		log:      log,
+func WithConfig(cfg *config.Config) Option {
+	return func(e *Executor) {
+		e.config = cfg
 	}
 }
 
-func (e *Executor) Run(ctx context.Context) error {
-	e.log.Info().Msg("backup manager started")
+func WithUploader(u *s3manager.Uploader) Option {
+	return func(e *Executor) {
+		e.uploader = u
+	}
+}
+
+func New(ctx context.Context, opts ...Option) *Executor {
+	log := zlog.Ctx(ctx).
+		With().
+		Str("module", "executor").
+		Logger()
+
+	e := &Executor{log: &log}
+
+	for _, opt := range opts {
+		opt(e)
+	}
+
+	return e
+}
+
+func (e *Executor) Run(ctx context.Context) {
+	e.log.Info().
+		Msg("backup manager started")
+
 	for name, backup := range e.config.Backups {
 		go e.startBackupRunner(ctx, name, *backup)
 	}
-	return nil
 }
 
-func (e *Executor) startBackupRunner(ctx context.Context, name string, backup config.Backup) {
+func (e *Executor) startBackupRunner(_ context.Context, name string, backup config.Backup) {
 	log := e.log.With().
 		Str("backup_name", name).
 		Dur("duration", backup.Interval).
@@ -102,6 +122,8 @@ func (e *Executor) uploadToS3(bucket, path string) error {
 	if err != nil {
 		return err
 	}
+
+	defer f.Close()
 
 	fName := filepath.Base(path)
 	_, err = e.uploader.Upload(&s3manager.UploadInput{
